@@ -1,26 +1,12 @@
 import { RefObject, Dispatch, SetStateAction } from "react";
-
 import { Settings } from "../types/Settings";
+import axios from "axios";
 
-let recognition: SpeechRecognition | null;
-let inactivityTimer: ReturnType<typeof setTimeout> | null;
-let autoSendTimer: ReturnType<typeof setTimeout>;
 let toggleOn = false;
+let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+let autoSendTimer: ReturnType<typeof setTimeout>;
 let mediaRecorder: MediaRecorder | null = null;
-
-/**
- * Get speech recognition instance if available via function call
- * to add support for SSR since window is not available on server.
- * @returns SpeechRecognition object if available, null otherwise
- */
-const getSpeechRecognition = () => {
-	if (!recognition) {
-		const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-		recognition = SpeechRecognition != null ? new SpeechRecognition() : null;
-	}
-
-	return recognition;
-};
+let audioChunks: BlobPart[] = [];
 
 /**
  * Starts recording user voice input with microphone.
@@ -31,8 +17,112 @@ const getSpeechRecognition = () => {
  * @param setInputLength sets the input length to reflect character count & limit
  * @param audioChunksRef: reference to audio chunks
  * @param inputRef reference to textarea for input
+ * 
  */
 export const startVoiceRecording = (
+	settings: Settings,
+	toggleVoice: () => Promise<void>,
+	triggerSendVoiceInput: () => void,
+	setTextAreaValue: (value: string) => void,
+	setInputLength: Dispatch<SetStateAction<number>>,
+	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>
+) => {
+	navigator.mediaDevices.getUserMedia({ audio: true })
+		.then(stream => {
+			mediaRecorder = new MediaRecorder(stream);
+			audioChunks = []; // Reset audio chunks on each recording
+
+			// Start recording
+			if (!toggleOn) {
+				try {
+					toggleOn = true;
+					mediaRecorder.start();
+				} catch {
+					// Catches rare DOM exceptions if user spams voice button
+				}
+			}
+
+			mediaRecorder.ondataavailable = event => {
+				audioChunks.push(event.data);
+			};
+
+			mediaRecorder.onstop = async () => {
+				// Stop the microphone stream
+				stream.getTracks().forEach(track => track.stop());
+
+				// Process the audio after stopping the mic
+				await processAudioAfterStop(settings, setTextAreaValue, setInputLength, inputRef);
+			};
+		})
+		.catch(error => {
+			console.error("Unable to use microphone:", error);
+		});
+};
+
+/**
+ * Processes the recorded audio after mic is turned off.
+ * Sends the audio to the transcription API and updates the input field.
+ *
+ * @param settings options provided to the bot
+ * @param setTextAreaValue sets the input value
+ * @param setInputLength sets the input length to reflect character count & limit
+ * @param inputRef reference to textarea for input
+ */
+const processAudioAfterStop = async (
+	settings: Settings,
+	setTextAreaValue: (value: string) => void,
+	setInputLength: Dispatch<SetStateAction<number>>,
+	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>
+) => {
+	if (audioChunks.length === 0) {
+		console.warn("No audio chunks available to process.");
+		return;
+	}
+
+	try {
+		// Merge audio chunks and create a Blob
+		const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+
+		// Create a FormData object to send audio
+		const formData = new FormData();
+		formData.append("file", audioBlob, "audio.wav");
+
+		// Make the API request
+		const response = await axios.post("http://127.0.0.1:4557/transcribe/", formData, {
+			headers: { "Content-Type": "multipart/form-data" },
+		});
+
+		// Handle the API response
+		const transcription = response.data.transcription || ""; // Replace with actual key from your API
+		if (inputRef.current) {
+			const characterLimit = settings.chatInput?.characterLimit;
+			const newInput = inputRef.current.value + transcription;
+
+			if (characterLimit != null && characterLimit >= 0 && newInput.length > characterLimit) {
+				setTextAreaValue(newInput.slice(0, characterLimit));
+			} else {
+				setTextAreaValue(newInput);
+			}
+			setInputLength(inputRef.current.value.length);
+		}
+	} catch (error) {
+		console.error("Error during transcription:", error);
+	}
+};
+
+
+/**
+ * Starts voice recording for input into textarea using custom API.
+ *
+ * @param settings options provided to the bot
+ * @param toggleVoice handles toggling of voice
+ * @param triggerSendVoiceInput triggers sending of voice input into chat window
+ * @param setTextAreaValue sets the input value
+ * @param setInputLength sets the input length to reflect character count & limit
+ * @param audioChunksRef reference to recorded audio chunks
+ * @param inputRef reference to textarea for input
+ */
+const startTranscriptionUsingApi = async (
 	settings: Settings,
 	toggleVoice: () => Promise<void>,
 	triggerSendVoiceInput: () => void,
@@ -41,92 +131,54 @@ export const startVoiceRecording = (
 	audioChunksRef: RefObject<BlobPart[]>,
 	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>
 ) => {
-	if (settings.voice?.sendAsAudio) {
-		// Only use MediaRecorder when sendAsAudio is enabled
-		startAudioRecording(triggerSendVoiceInput, audioChunksRef);
-	} else {
-		// Only use SpeechRecognition when sendAsAudio is disabled
-		startSpeechRecognition(settings, toggleVoice, triggerSendVoiceInput,
-			setTextAreaValue, setInputLength, inputRef
-		);
-	}
-}
-
-/**
- * Starts voice recording for input into textarea.
- *
- * @param settings options provided to the bot
- * @param toggleVoice handles toggling of voice
- * @param triggerSendVoiceInput triggers sending of voice input into chat window
- * @param setInputLength sets the input length to reflect character count & limit
- * @param inputRef reference to textarea for input
- */
-const startSpeechRecognition = (
-	settings: Settings,
-	toggleVoice: () => Promise<void>,
-	triggerSendVoiceInput: () => void,
-	setTextAreaValue: (value: string) => void,
-	setInputLength: Dispatch<SetStateAction<number>>,
-	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>
-) => {
-	const recognition = getSpeechRecognition();
-
-	if (!recognition) {
-		return;
-	}
-
 	if (!toggleOn) {
 		try {
 			toggleOn = true;
-			recognition.lang = settings.voice?.language as string;
-			recognition.start();
-		} catch {
-			// catches rare dom exception if user spams voice button
+
+			// Merge audio chunks and create a Blob
+			const audioBlob = new Blob(audioChunksRef.current || [], { type: "audio/wav" });
+
+			// Create a FormData object to send audio
+			const formData = new FormData();
+			formData.append("file", audioBlob, "audio.wav");
+
+			// Make the API request
+			const response = await axios.post("http://127.0.0.1:4557/transcribe/", formData, {
+				headers: { "Content-Type": "multipart/form-data" },
+			});
+
+			// Handle the API response
+			const transcription = response.data.transcription || ""; // Replace with actual key from your API
+			if (inputRef.current) {
+				const characterLimit = settings.chatInput?.characterLimit;
+				const newInput = inputRef.current.value + transcription;
+
+				if (characterLimit != null && characterLimit >= 0 && newInput.length > characterLimit) {
+					setTextAreaValue(newInput.slice(0, characterLimit));
+				} else {
+					setTextAreaValue(newInput);
+				}
+				setInputLength(inputRef.current.value.length);
+			}
+
+			// Automatically send input if settings allow
+			if (!settings.voice?.autoSendDisabled) {
+				autoSendTimer = setTimeout(triggerSendVoiceInput, settings.voice?.autoSendPeriod);
+			}
+		} catch (error) {
+			console.error("Error during transcription:", error);
+		} finally {
+			toggleOn = false;
 		}
 	}
 
-	const inactivityPeriod = settings.voice?.timeoutPeriod;
-	const autoSendPeriod = settings.voice?.autoSendPeriod;
-
-	recognition.onresult = event => {
-		clearTimeout(inactivityTimer as ReturnType<typeof setTimeout>);
-		inactivityTimer = null;
-		clearTimeout(autoSendTimer);
-
-		const voiceInput = event.results[event.results.length - 1][0].transcript;
-
-		if (inputRef.current) {
-			const characterLimit = settings.chatInput?.characterLimit
-			const newInput = inputRef.current.value + voiceInput;
-			if (characterLimit != null && characterLimit >= 0 && newInput.length > characterLimit) {
-				setTextAreaValue(newInput.slice(0, characterLimit));
-			} else {
-				setTextAreaValue(newInput);
-			}
-			setInputLength(inputRef.current.value.length);
-		}
-
-		inactivityTimer = setTimeout(async () => await handleTimeout(toggleVoice, inputRef), inactivityPeriod);
-		if (!settings.voice?.autoSendDisabled) {
-			autoSendTimer = setTimeout(triggerSendVoiceInput, autoSendPeriod);
-		}
-	};
-
-	recognition.onend = () => {
-		if (toggleOn) {
-			recognition.start();
-			if (!inactivityTimer) {
-				inactivityTimer = setTimeout(async () => await handleTimeout(toggleVoice, inputRef), inactivityPeriod);
-			}
-		} else {
-			clearTimeout(inactivityTimer as ReturnType<typeof setTimeout>);
-			inactivityTimer = null;
-			clearTimeout(autoSendTimer);
-		}
-	};
-
-	inactivityTimer = setTimeout(async () => await handleTimeout(toggleVoice, inputRef), inactivityPeriod);
-}
+	// Handle inactivity timeout
+	if (!inactivityTimer) {
+		inactivityTimer = setTimeout(
+			async () => await handleTimeout(toggleVoice, inputRef), settings.voice?.timeoutPeriod
+		);
+	}
+};
 
 /**
  * Starts voice recording for sending as audio file (auto send does not work for media recordings).
@@ -147,7 +199,7 @@ const startAudioRecording = (
 					toggleOn = true;
 					mediaRecorder.start();
 				} catch {
-					// catches rare dom exception if user spams voice button
+					// catches rare DOM exception if user spams voice button
 				}
 			}
 
@@ -165,32 +217,15 @@ const startAudioRecording = (
 		.catch(error => {
 			console.error("Unable to use microphone:", error);
 		});
-}
+};
 
-/**
- * Stops all voice recordings.
- */
 export const stopVoiceRecording = () => {
-	const recognition = getSpeechRecognition();
-
-	if (!recognition) {
-		return;
-	}
-
-	toggleOn = false;
-	if (recognition) {
-		recognition.stop();
-	}
-
 	if (mediaRecorder && mediaRecorder.state !== "inactive") {
 		mediaRecorder.stop();
 		mediaRecorder = null;
 	}
-
-	clearTimeout(inactivityTimer as ReturnType<typeof setTimeout>);
-	inactivityTimer = null;
-	clearTimeout(autoSendTimer);
-}
+	toggleOn = false;
+};
 
 /**
  * Syncs voice toggle to textarea state (voice should not be enabled if textarea is disabled).
@@ -199,34 +234,28 @@ export const stopVoiceRecording = () => {
  * @param settings options provided to the bot
  */
 export const syncVoiceWithChatInput = (keepVoiceOn: boolean, settings: Settings) => {
-	const recognition = getSpeechRecognition();
-
-	if (settings.voice?.disabled || !settings.chatInput?.blockSpam || !recognition) {
+	if (settings.voice?.disabled || !settings.chatInput?.blockSpam) {
 		return;
 	}
 
 	if (keepVoiceOn && !toggleOn) {
 		toggleOn = true;
-		if (settings.voice?.sendAsAudio) {
-			mediaRecorder?.start();
-		} else {
-			recognition.start();
-		}
+		mediaRecorder?.start();
 	} else if (!keepVoiceOn) {
 		stopVoiceRecording();
 	}
-}
-
+};
 /**
  * Handles timeout for automatically turning off voice.
  * 
  * @param handleToggleVoice handles toggling of voice
  */
-const handleTimeout = async (toggleVoice: () => Promise<void>,
-	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>) => {
-
+const handleTimeout = async (
+	toggleVoice: () => Promise<void>,
+	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>
+) => {
 	if (!inputRef.current?.disabled) {
 		await toggleVoice();
 	}
 	stopVoiceRecording();
-}
+};
