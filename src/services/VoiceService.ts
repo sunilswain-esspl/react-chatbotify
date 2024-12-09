@@ -3,8 +3,7 @@ import { Settings } from "../types/Settings";
 import axios from "axios";
 
 let toggleOn = false;
-let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
-let autoSendTimer: ReturnType<typeof setTimeout>;
+// 
 let mediaRecorder: MediaRecorder | null = null;
 let audioChunks: BlobPart[] = [];
 
@@ -92,6 +91,8 @@ const processAudioAfterStop = async (
 			headers: { "Content-Type": "multipart/form-data" },
 		});
 
+		console.log(response)
+		
 		// Handle the API response
 		const transcription = response.data.transcription || ""; // Replace with actual key from your API
 		if (inputRef.current) {
@@ -111,74 +112,74 @@ const processAudioAfterStop = async (
 };
 
 
-/**
- * Starts voice recording for input into textarea using custom API.
- *
- * @param settings options provided to the bot
- * @param toggleVoice handles toggling of voice
- * @param triggerSendVoiceInput triggers sending of voice input into chat window
- * @param setTextAreaValue sets the input value
- * @param setInputLength sets the input length to reflect character count & limit
- * @param audioChunksRef reference to recorded audio chunks
- * @param inputRef reference to textarea for input
- */
-const startTranscriptionUsingApi = async (
-	settings: Settings,
-	toggleVoice: () => Promise<void>,
-	triggerSendVoiceInput: () => void,
-	setTextAreaValue: (value: string) => void,
-	setInputLength: Dispatch<SetStateAction<number>>,
-	audioChunksRef: RefObject<BlobPart[]>,
-	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>
-) => {
-	if (!toggleOn) {
-		try {
-			toggleOn = true;
+// /**
+//  * Starts voice recording for input into textarea using custom API.
+//  *
+//  * @param settings options provided to the bot
+//  * @param toggleVoice handles toggling of voice
+//  * @param triggerSendVoiceInput triggers sending of voice input into chat window
+//  * @param setTextAreaValue sets the input value
+//  * @param setInputLength sets the input length to reflect character count & limit
+//  * @param audioChunksRef reference to recorded audio chunks
+//  * @param inputRef reference to textarea for input
+//  */
+// const startTranscriptionUsingApi = async (
+// 	settings: Settings,
+// 	toggleVoice: () => Promise<void>,
+// 	triggerSendVoiceInput: () => void,
+// 	setTextAreaValue: (value: string) => void,
+// 	setInputLength: Dispatch<SetStateAction<number>>,
+// 	audioChunksRef: RefObject<BlobPart[]>,
+// 	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>
+// ) => {
+// 	if (!toggleOn) {
+// 		try {
+// 			toggleOn = true;
 
-			// Merge audio chunks and create a Blob
-			const audioBlob = new Blob(audioChunksRef.current || [], { type: "audio/wav" });
+// 			// Merge audio chunks and create a Blob
+// 			const audioBlob = new Blob(audioChunksRef.current || [], { type: "audio/wav" });
 
-			// Create a FormData object to send audio
-			const formData = new FormData();
-			formData.append("file", audioBlob, "audio.wav");
+// 			// Create a FormData object to send audio
+// 			const formData = new FormData();
+// 			formData.append("file", audioBlob, "audio.wav");
 
-			// Make the API request
-			const response = await axios.post("http://127.0.0.1:4557/transcribe/", formData, {
-				headers: { "Content-Type": "multipart/form-data" },
-			});
+// 			// Make the API request
+// 			const response = await axios.post("http://127.0.0.1:4557/transcribe/", formData, {
+// 				headers: { "Content-Type": "multipart/form-data" },
+// 			});
 
-			// Handle the API response
-			const transcription = response.data.transcription || ""; // Replace with actual key from your API
-			if (inputRef.current) {
-				const characterLimit = settings.chatInput?.characterLimit;
-				const newInput = inputRef.current.value + transcription;
+// 			// Handle the API response
+// 			const transcription = response.data.transcription || ""; // Replace with actual key from your API
+// 			if (inputRef.current) {
+// 				const characterLimit = settings.chatInput?.characterLimit;
+// 				const newInput = inputRef.current.value + transcription;
 
-				if (characterLimit != null && characterLimit >= 0 && newInput.length > characterLimit) {
-					setTextAreaValue(newInput.slice(0, characterLimit));
-				} else {
-					setTextAreaValue(newInput);
-				}
-				setInputLength(inputRef.current.value.length);
-			}
+// 				if (characterLimit != null && characterLimit >= 0 && newInput.length > characterLimit) {
+// 					setTextAreaValue(newInput.slice(0, characterLimit));
+// 				} else {
+// 					setTextAreaValue(newInput);
+// 				}
+// 				setInputLength(inputRef.current.value.length);
+// 			}
 
-			// Automatically send input if settings allow
-			if (!settings.voice?.autoSendDisabled) {
-				autoSendTimer = setTimeout(triggerSendVoiceInput, settings.voice?.autoSendPeriod);
-			}
-		} catch (error) {
-			console.error("Error during transcription:", error);
-		} finally {
-			toggleOn = false;
-		}
-	}
+// 			// Automatically send input if settings allow
+// 			if (!settings.voice?.autoSendDisabled) {
+// 				autoSendTimer = setTimeout(triggerSendVoiceInput, settings.voice?.autoSendPeriod);
+// 			}
+// 		} catch (error) {
+// 			console.error("Error during transcription:", error);
+// 		} finally {
+// 			toggleOn = false;
+// 		}
+// 	}
 
-	// Handle inactivity timeout
-	if (!inactivityTimer) {
-		inactivityTimer = setTimeout(
-			async () => await handleTimeout(toggleVoice, inputRef), settings.voice?.timeoutPeriod
-		);
-	}
-};
+// 	// Handle inactivity timeout
+// 	if (!inactivityTimer) {
+// 		inactivityTimer = setTimeout(
+// 			async () => await handleTimeout(toggleVoice, inputRef), settings.voice?.timeoutPeriod
+// 		);
+// 	}
+// };
 
 /**
  * Starts voice recording for sending as audio file (auto send does not work for media recordings).
@@ -186,38 +187,38 @@ const startTranscriptionUsingApi = async (
  * @param triggerSendVoiceInput triggers sending of voice input into chat window
  * @param audioChunksRef: reference to audio chunks
  */
-const startAudioRecording = (
-	triggerSendVoiceInput: () => void,
-	audioChunksRef: RefObject<BlobPart[]>
-) => {
-	navigator.mediaDevices.getUserMedia({ audio: true })
-		.then(stream => {
-			mediaRecorder = new MediaRecorder(stream);
+// const startAudioRecording = (
+// 	triggerSendVoiceInput: () => void,
+// 	audioChunksRef: RefObject<BlobPart[]>
+// ) => {
+// 	navigator.mediaDevices.getUserMedia({ audio: true })
+// 		.then(stream => {
+// 			mediaRecorder = new MediaRecorder(stream);
 
-			if (!toggleOn) {
-				try {
-					toggleOn = true;
-					mediaRecorder.start();
-				} catch {
-					// catches rare DOM exception if user spams voice button
-				}
-			}
+// 			if (!toggleOn) {
+// 				try {
+// 					toggleOn = true;
+// 					mediaRecorder.start();
+// 				} catch {
+// 					// catches rare DOM exception if user spams voice button
+// 				}
+// 			}
 
-			mediaRecorder.ondataavailable = event => {
-				if (audioChunksRef.current) {
-					audioChunksRef.current.push(event.data);
-				}
-			};
+// 			mediaRecorder.ondataavailable = event => {
+// 				if (audioChunksRef.current) {
+// 					audioChunksRef.current.push(event.data);
+// 				}
+// 			};
 
-			mediaRecorder.onstop = () => {
-				triggerSendVoiceInput();
-				stream.getTracks().forEach(track => track.stop());
-			};
-		})
-		.catch(error => {
-			console.error("Unable to use microphone:", error);
-		});
-};
+// 			mediaRecorder.onstop = () => {
+// 				triggerSendVoiceInput();
+// 				stream.getTracks().forEach(track => track.stop());
+// 			};
+// 		})
+// 		.catch(error => {
+// 			console.error("Unable to use microphone:", error);
+// 		});
+// };
 
 export const stopVoiceRecording = () => {
 	if (mediaRecorder && mediaRecorder.state !== "inactive") {
@@ -250,12 +251,12 @@ export const syncVoiceWithChatInput = (keepVoiceOn: boolean, settings: Settings)
  * 
  * @param handleToggleVoice handles toggling of voice
  */
-const handleTimeout = async (
-	toggleVoice: () => Promise<void>,
-	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>
-) => {
-	if (!inputRef.current?.disabled) {
-		await toggleVoice();
-	}
-	stopVoiceRecording();
-};
+// const handleTimeout = async (
+// 	toggleVoice: () => Promise<void>,
+// 	inputRef: RefObject<HTMLTextAreaElement | HTMLInputElement | null>
+// ) => {
+// 	if (!inputRef.current?.disabled) {
+// 		await toggleVoice();
+// 	}
+// 	stopVoiceRecording();
+// };

@@ -57,7 +57,7 @@ const VoiceButton = () => {
 	useEffect(() => {
 		if (voiceToggledOn) {
 			startVoiceRecording(settings, toggleVoice, triggerSendVoiceInput,
-				setTextAreaValue, setInputLength, audioChunksRef, inputRef);
+				setTextAreaValue, setInputLength, inputRef);
 		} else {
 			stopVoiceRecording();
 		}
