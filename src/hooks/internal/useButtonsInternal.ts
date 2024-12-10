@@ -6,6 +6,7 @@ import {
 	createEmojiButton,
 	createFileAttachmentButton,
 	createNotificationButton,
+	createHelpButton,
 	createSendButton,
 	createVoiceButton,
 	getButtonConfig
@@ -23,8 +24,9 @@ export const useButtonInternal = () => {
 	// handles the rendering of buttons
 	const staticButtonComponentMap = useMemo(() => ({
 		[Button.CLOSE_CHAT_BUTTON]: () => createCloseChatButton(),
-		[Button.AUDIO_BUTTON]: () => createAudioButton(),
-		[Button.NOTIFICATION_BUTTON]: () => createNotificationButton(),
+		// [Button.AUDIO_BUTTON]: () => createAudioButton(),
+		// [Button.NOTIFICATION_BUTTON]: () => createNotificationButton(),
+		[Button.HELP_BUTTON]: () => createHelpButton(),
 		[Button.EMOJI_PICKER_BUTTON]: () => createEmojiButton(),
 		[Button.FILE_ATTACHMENT_BUTTON]: () => createFileAttachmentButton(),
 		[Button.SEND_MESSAGE_BUTTON]: () => createSendButton(),

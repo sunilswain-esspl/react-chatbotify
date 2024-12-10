@@ -54,6 +54,8 @@ export const DefaultStyles: Styles = {
 	fileAttachmentIconDisabledStyle: {},
 	notificationIconStyle: {},
 	notificationIconDisabledStyle: {},
+	helpIconStyle: {},
+	helpIconDisabledStyle: {},
 	voiceIconStyle: {},
 	voiceIconDisabledStyle: {},
 	sendIconStyle: {},

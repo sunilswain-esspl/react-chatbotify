@@ -43,6 +43,8 @@ export type Styles = {
 	fileAttachmentButtonDisabledStyle?: React.CSSProperties;
 	notificationButtonStyle?: React.CSSProperties;
 	notificationButtonDisabledStyle?: React.CSSProperties;
+	helpButtonStyle?: React.CSSProperties;
+	helpButtonDisabledStyle?: React.CSSProperties;
 	voiceButtonStyle?: React.CSSProperties;
 	voiceButtonDisabledStyle?: React.CSSProperties;
 	chatIconStyle?: React.CSSProperties;
@@ -55,6 +57,8 @@ export type Styles = {
 	fileAttachmentIconDisabledStyle?: React.CSSProperties;
 	notificationIconStyle?: React.CSSProperties;
 	notificationIconDisabledStyle?: React.CSSProperties;
+	helpIconStyle?: React.CSSProperties;
+	helpIconDisabledStyle?: React.CSSProperties;
 	voiceIconStyle?: React.CSSProperties;
 	voiceIconDisabledStyle?: React.CSSProperties;
 	sendIconStyle?: React.CSSProperties;

@@ -3,6 +3,7 @@ import EmojiButton from "../components/Buttons/EmojiButton/EmojiButton";
 import AudioButton from "../components/Buttons/AudioButton/AudioButton";
 import CloseChatButton from "../components/Buttons/CloseChatButton/CloseChatButton";
 import NotificationButton from "../components/Buttons/NotificationButton/NotificationButton";
+import HelpButton from "../components/Buttons/HelpButton/HelpButton";
 import VoiceButton from "../components/Buttons/VoiceButton/VoiceButton";
 import SendButton from "../components/Buttons/SendButton/SendButton";
 import { ButtonConfig } from "../types/internal/ButtonConfig";
@@ -29,6 +30,7 @@ export const getButtonConfig = (
 		[Button.EMOJI_PICKER_BUTTON]: settings.emoji?.disabled,
 		[Button.FILE_ATTACHMENT_BUTTON]: settings.fileAttachment?.disabled,
 		[Button.NOTIFICATION_BUTTON]: settings.notification?.disabled,
+		[Button.HELP_BUTTON]: settings.help?.disabled,
 		[Button.SEND_MESSAGE_BUTTON]: false,
 		[Button.VOICE_MESSAGE_BUTTON]: settings.voice?.disabled
 	};
@@ -77,6 +79,7 @@ export const getButtonConfig = (
 
 export const createAudioButton = () => <AudioButton/>
 export const createNotificationButton = () => <NotificationButton/>
+export const createHelpButton = () => <HelpButton/>
 export const createCloseChatButton = () => <CloseChatButton/>
 export const createVoiceButton = () => <VoiceButton/>
 export const createSendButton = () => <SendButton/>

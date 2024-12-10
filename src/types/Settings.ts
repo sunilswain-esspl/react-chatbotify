@@ -37,6 +37,15 @@ export type Settings = {
 		sound?: string;
 		showCount?: boolean;
 	},
+	help?: {
+		disabled?: boolean;
+		defaultToggledOn?: boolean;
+		volume?: number;
+		icon?: string | React.FC<React.SVGProps<SVGSVGElement>>;
+		iconDisabled?: string | React.FC<React.SVGProps<SVGSVGElement>>;
+		sound?: string;
+		showCount?: boolean;
+	},
 	audio?: {
 		disabled?: boolean;
 		defaultToggledOn?: boolean;
@@ -163,6 +172,7 @@ export type Settings = {
 		emojiButton?: string;
 		fileAttachmentButton?: string;
 		notificationButton?: string;
+		helpButton?: string;
 		sendButton?: string;
 		voiceButton?: string;
 		inputTextArea?: string;

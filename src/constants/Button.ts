@@ -2,6 +2,7 @@
 const Button = {
 	AUDIO_BUTTON: "audio-button",
 	NOTIFICATION_BUTTON: "notification-button",
+	HELP_BUTTON: "help-button",
 	CLOSE_CHAT_BUTTON: "close-chat-button",
 	SEND_MESSAGE_BUTTON: "send-button",
 	VOICE_MESSAGE_BUTTON: "voice-button",

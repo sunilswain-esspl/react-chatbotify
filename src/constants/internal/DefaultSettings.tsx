@@ -8,6 +8,10 @@ import { ReactComponent as ChatIcon } from "../../assets/chat_icon.svg";
 import { ReactComponent as FileAttachmentIcon } from '../../assets/file_attachment_icon.svg';
 import { ReactComponent as NotificationIcon } from '../../assets/notification_icon.svg';
 import { ReactComponent as NotificationIconDisabled } from '../../assets/notification_icon_disabled.svg';
+
+import  helpIcon  from '../../assets/helpIcon.png';
+import  helpIconDisabled  from '../../assets/helpIconDisabled.png';
+
 import { ReactComponent as CloseChatIcon } from '../../assets/close_chat_icon.svg';
 import { ReactComponent as SendButtonIcon } from '../../assets/send_icon.svg';
 import { ReactComponent as VoiceIcon } from '../../assets/voice_icon.svg';
@@ -49,7 +53,12 @@ export const DefaultSettings: Settings = {
 		),
 		showAvatar: true,
 		avatar: botAvatar,
-		buttons: [Button.NOTIFICATION_BUTTON, Button.AUDIO_BUTTON, Button.CLOSE_CHAT_BUTTON],
+		buttons: [
+			Button.NOTIFICATION_BUTTON,
+			Button.HELP_BUTTON, 
+			Button.AUDIO_BUTTON, 
+			Button.CLOSE_CHAT_BUTTON
+		],
 		closeChatIcon: CloseChatIcon,
 	},
 	notification: {
@@ -58,6 +67,15 @@ export const DefaultSettings: Settings = {
 		volume: 0.2,
 		icon: NotificationIcon,
 		iconDisabled: NotificationIconDisabled,
+		sound: notificationSound,
+		showCount: true,
+	},
+	help: {
+		disabled: false,
+		defaultToggledOn: true,
+		volume: 0.2,
+		icon: helpIcon,
+		iconDisabled: helpIconDisabled,
 		sound: notificationSound,
 		showCount: true,
 	},
