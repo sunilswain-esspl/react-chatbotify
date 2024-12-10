@@ -73,7 +73,7 @@ export const DefaultSettings: Settings = {
 	help: {
 		disabled: false,
 		defaultToggledOn: true,
-		volume: 0.2,
+		message: "Try /help for assistance",
 		icon: helpIcon,
 		iconDisabled: helpIconDisabled,
 		sound: notificationSound,

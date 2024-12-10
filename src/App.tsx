@@ -46,11 +46,50 @@ function App() {
 			path: "bot_reply",
 		},
 		bot_reply: {
-			message: (params: Params) => fetchResponse(params.userInput),
+			message: async (params: Params) => {
+				if (params.prevPath == "ask_preference") {
+					return;
+				}
+				else {
+					if (params.userInput == "/help") {
+						return;
+					}
+					else {
+						return await fetchResponse(params.userInput)
+					}
+				}
+			},
 			// function: (params: Params) => setMessage(params.userInput),
 			// transition: { duration: 500 }, IMPORTANT: turning this on starts loop
+			path: (params: Params) => {
+				if (params.userInput != "/help") {
+					return "bot_reply"
+				} else {
+					return "help";
+				}
+			},
+		},
+		help: {
+			message: () => `Here are the available actions you can perform,`,
+			options: ["Change Preference"],
+			chatDisabled: true,
+			path: () => "ask_preference",
+		},
+		ask_preference: {
+			message: "Choose your preferences",
+			checkboxes: {items: [
+				"Leadership",
+				"Personal",
+				"Teams",
+				"Learning",
+				"Meetings",
+				"Fundamentals"
+			], min:1},
+			function: (params: Params) => alert(`You picked: ${JSON.stringify(params.userInput)}!`),
+			chatDisabled: true,
 			path: "bot_reply",
 		},
+		
 		// ask_token: {
 		// 	message: () => "Before we proceed, we need to verify your profile id, "
 		// 	+ "Enter your 6 digit profile id",

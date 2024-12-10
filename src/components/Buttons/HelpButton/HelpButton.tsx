@@ -67,26 +67,26 @@ const HelpButton = () => {
 	};
 
 	return (
-		// <div>
-		<div
-			aria-label={settings.ariaLabel?.helpButton ?? "show help"}
-			role="button"
-			onMouseDown={toggleHelpMessage}
-			style={
-				isHelpVisible
-					? styles.helpButtonStyle
-					: { ...styles.helpButtonStyle, ...styles.helpButtonDisabledStyle }
-			}
-		>
-			{renderButton()}
+		<div>
+			<div
+				aria-label={settings.ariaLabel?.helpButton ?? "show help"}
+				role="button"
+				onMouseDown={toggleHelpMessage}
+				style={
+					isHelpVisible
+						? styles.helpButtonStyle
+						: { ...styles.helpButtonStyle, ...styles.helpButtonDisabledStyle }
+				}
+			>
+				{renderButton()}
+			</div>
+			{/* Help message */}
+			{isHelpVisible && (
+				<div className="rcb-help-message" data-testid="rcb-help-message">
+					{settings.help?.message ?? "Try /help for assistance."}
+				</div>
+			)}
 		</div>
-		// Help message
-		// {isHelpVisible && (
-		// 	<div className="rcb-help-message" data-testid="rcb-help-message">
-		// 		{settings.help?.message ?? "Here is some helpful information!"}
-		// 	</div>
-		// )}
-		// {/* </div> */}
 	);
 };
 
