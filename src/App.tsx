@@ -43,19 +43,57 @@ function App() {
 	const flow: Flow = {
 		start: {
 			message: "Hello! How can I help you?",
-			path: "bot_reply",
+			path: (params: Params) => {
+				if (params.userInput != "/help") {
+					return "bot_reply"
+				} else {
+					return "help";
+				}
+			},
 		},
 		bot_reply: {
 			message: async (params: Params) => {
-				if (params.prevPath == "ask_preference") {
-					return;
-				}
-				else {
-					if (params.userInput == "/help") {
+				if (params.prevPath === "ask_preference") {
+					// Define the preference mapping
+					const preferenceMap: { [key: string]: string } = {
+						"1": "Personal",
+						"2": "Leadership",
+						"3": "Fundamentals",
+						"4": "Meetings",
+						"5": "Learning",
+						"6": "Teams",
+					};
+			
+					// Parse the userInput string into an array of preferences
+					const userInputs: string[] = params.userInput
+						.split(",") // Split by commas
+						.map((input) => input.trim()); // Trim whitespace around each preference
+			
+					// Extract selected keys
+					const selectedKeys = userInputs
+						.filter((input) => Object.values(preferenceMap).includes(input)) // Validate against preferences
+						.map((input) => {
+							// Find the key corresponding to the selected value
+							return Object.keys(preferenceMap).find(
+								(key) => preferenceMap[key] === input
+							);
+						})
+						.filter(Boolean) // Remove undefined values
+						.join(", "); // Convert to a comma-separated string
+			
+					// Construct the API message
+					const apiMessage = `/prefs ${selectedKeys}`;
+			
+					// Send the API request
+					return await fetchResponse(apiMessage);
+				} else {
+					if (params.userInput === "/help") {
 						return;
 					}
-					else {
-						return await fetchResponse(params.userInput)
+					else if (params.userInput === "Cancel ❌") {
+						return "Operation cancelled";
+					} else {
+						return await fetchResponse(params.userInput);
 					}
 				}
 			},
@@ -71,9 +109,15 @@ function App() {
 		},
 		help: {
 			message: () => `Here are the available actions you can perform,`,
-			options: ["Change Preference"],
+			options: ["Change Preference", "Cancel ❌"],
 			chatDisabled: true,
-			path: () => "ask_preference",
+			path: (params: Params) => {
+				if (params.userInput === "Cancel ❌") {
+					return "bot_reply"
+				} else {
+					return "ask_preference";
+				}
+			},
 		},
 		ask_preference: {
 			message: "Choose your preferences",
@@ -85,7 +129,7 @@ function App() {
 				"Meetings",
 				"Fundamentals"
 			], min:1},
-			function: (params: Params) => alert(`You picked: ${JSON.stringify(params.userInput)}!`),
+			// function: (params: Params) => alert(`You picked: ${JSON.stringify(params.userInput)}!`),
 			chatDisabled: true,
 			path: "bot_reply",
 		},
